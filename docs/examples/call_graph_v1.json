@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0.0",
+  "directed": true,
+  "metadata": {
+    "project_id": "graph_demo",
+    "revision": null,
+    "frontend": "clang",
+    "languages": [
+      "c"
+    ],
+    "build_configuration_id": null,
+    "build_root_target": null,
+    "matching_policy": "matched_edges_only",
+    "linker_verified": false,
+    "attributes": {
+      "summary": {
+        "node_count": 2,
+        "edge_count": 1,
+        "call_site_count": 2,
+        "resolution_counts": {
+          "matched": 2
+        }
+      },
+      "build_context": null,
+      "limitations": [
+        "function_pointer_targets_not_resolved",
+        "runtime_path_feasibility_not_checked",
+        "linker_results_not_verified"
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "demo/main.c::process@3:1",
+      "kind": "function",
+      "name": "process",
+      "language": "c",
+      "repo": "demo",
+      "location": {
+        "file": "demo/main.c",
+        "line": 3,
+        "column": 1
+      },
+      "translation_unit": "demo/main.c",
+      "is_static": false,
+      "build_target": null,
+      "build_configuration_id": null,
+      "attributes": {
+        "return_type": "void",
+        "parameters": [],
+        "function_type": "void (void)",
+        "linkage_name": "_process"
+      }
+    },
+    {
+      "id": "demo/main.c::target@1:1",
+      "kind": "function",
+      "name": "target",
+      "language": "c",
+      "repo": "demo",
+      "location": {
+        "file": "demo/main.c",
+        "line": 1,
+        "column": 1
+      },
+      "translation_unit": "demo/main.c",
+      "is_static": false,
+      "build_target": null,
+      "build_configuration_id": null,
+      "attributes": {
+        "return_type": "void",
+        "parameters": [],
+        "function_type": "void (void)",
+        "linkage_name": "_target"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_90536a1d65a5435b53095769db8a1d19db4e2489cc1b0e177cdfa448566fe9ce",
+      "kind": "calls",
+      "source": "demo/main.c::process@3:1",
+      "target": "demo/main.c::target@1:1",
+      "call_site_ids": [
+        "demo/main.c::process@3:1::call@47#0",
+        "demo/main.c::process@3:1::call@61#1"
+      ],
+      "is_cross_repo": false
+    }
+  ],
+  "call_sites": [
+    {
+      "id": "demo/main.c::process@3:1::call@47#0",
+      "caller_id": "demo/main.c::process@3:1",
+      "callee_id": "demo/main.c::target@1:1",
+      "callee_name": "target",
+      "expression": "target()",
+      "location": {
+        "file": "demo/main.c",
+        "line": 4,
+        "column": 5
+      },
+      "resolution": "matched",
+      "candidate_ids": [
+        "demo/main.c::target@1:1"
+      ],
+      "reason": "clang_decl_reference",
+      "evidence": "compiler_reference_in_translation_unit",
+      "linker_verified": false,
+      "attributes": {
+        "syntax_kind": "ImplicitCastExpr",
+        "location_kind": "source_range",
+        "macro_expansion": false,
+        "spelling_location": null,
+        "binding": null,
+        "start_byte": 47,
+        "end_byte": 55,
+        "end_line_number": 4,
+        "end_column": 13
+      }
+    },
+    {
+      "id": "demo/main.c::process@3:1::call@61#1",
+      "caller_id": "demo/main.c::process@3:1",
+      "callee_id": "demo/main.c::target@1:1",
+      "callee_name": "target",
+      "expression": "target()",
+      "location": {
+        "file": "demo/main.c",
+        "line": 5,
+        "column": 5
+      },
+      "resolution": "matched",
+      "candidate_ids": [
+        "demo/main.c::target@1:1"
+      ],
+      "reason": "clang_decl_reference",
+      "evidence": "compiler_reference_in_translation_unit",
+      "linker_verified": false,
+      "attributes": {
+        "syntax_kind": "ImplicitCastExpr",
+        "location_kind": "source_range",
+        "macro_expansion": false,
+        "spelling_location": null,
+        "binding": null,
+        "start_byte": 61,
+        "end_byte": 69,
+        "end_line_number": 5,
+        "end_column": 13
+      }
+    }
+  ],
+  "diagnostics": []
+}

@@ -1,0 +1,54 @@
+[
+    {
+      "bug": "Possible use-after-free if cJSON_Delete is called on an object that has already been deleted or not properly initialized.",
+      "api": "cJSON_Delete"
+    },
+    {
+      "api": "target",
+      "bug": "[T01 测试数据，非真实漏洞] 用于验证按 API 名称匹配并展示直接调用者 process。"
+    },
+    {
+      "api": "chain_sink",
+      "bug": "[T02 测试数据，非真实漏洞] 验证完整路径包含 chain_entry，但 bug 影响展示只列直接调用者 chain_middle。"
+    },
+    {
+      "api": "branch_sink",
+      "bug": "[T03 测试数据，非真实漏洞] 验证两个直接调用者和两条调用路径，以及路径合并后的函数名去重。"
+    },
+    {
+      "api": "repeat_sink",
+      "bug": "[T05 测试数据，非真实漏洞] 验证三次重复调用只形成一个名称级调用关系，不代表只有一个调用点。"
+    },
+    {
+      "api": "external_api",
+      "bug": "[T07 测试数据，非真实漏洞] 目标没有函数定义，但当前代码仍会记录 external_caller 到该名称的边。"
+    },
+    {
+      "api": "fp_target",
+      "bug": "[T09 测试数据，非真实漏洞] 三处间接调用在 C 代码中指向此函数；用于观察当前实现缺少函数指针目标解析。"
+    },
+    {
+      "api": "macro_sink",
+      "bug": "[T10 测试数据，非真实漏洞] 两处宏调用展开后会调用此函数；用于观察当前实现没有宏展开。"
+    },
+    {
+      "api": "disabled_sink",
+      "bug": "[T11 测试数据，非真实漏洞] 唯一的文本调用位于 #if 0 内；用于检查是否把失效分支计入调用图。"
+    },
+    {
+      "api": "self_recursive",
+      "bug": "[T13 测试数据，非真实漏洞] 验证自递归边和外部入口 recursion_entry；并非报告实际递归漏洞。"
+    },
+    {
+      "api": "cycle_a",
+      "bug": "[T13 测试数据，非真实漏洞] cycle_a 与 cycle_b 互相调用，用于观察无上游起点的环如何影响路径结果。"
+    },
+    {
+      "api": "fan_sink",
+      "bug": "[T14 测试数据，非真实漏洞] 存在十二个直接调用者，用于比较 --max-paths 与相关函数集合的默认十条路径上限。"
+    },
+    {
+      "api": "ghost_api",
+      "bug": "[T15 负向测试数据，非真实漏洞] 源码中既没有定义也没有调用；用于验证 JSON 条目本身不能证明代码使用了该 API。"
+    }
+]

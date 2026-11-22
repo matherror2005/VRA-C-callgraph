@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VRA 调用图查看器</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #172a36;
+    --muted: #4e6370;
+    --line: #d4dfe3;
+    --accent: #006c64;
+    --cross: #a54820;
+    font: 15px system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; color: var(--ink); background: #f5f7f6; }
+  .shell { max-width: 1700px; margin: auto; padding: 24px clamp(14px, 3vw, 46px); }
+  header, .toolbar, .canvas-head { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+  header { padding-bottom: 20px; }
+  h1 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.025em; }
+  h1 span { color: var(--accent); margin-right: .45em; }
+  h2, h3, p { margin: 0; }
+  h2 { font-size: 1.1rem; }
+  h3 { font-size: .9rem; margin: 20px 0 8px; }
+  p + p { margin-top: 8px; }
+  #file { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  button, select, input, .open { font: inherit; }
+  button, select, .open { border: 1px solid #afbec5; border-radius: 7px; background: white; color: var(--ink); padding: 7px 12px; cursor: pointer; }
+  button:hover, select:hover { border-color: var(--accent); }
+  :focus-visible, #file:focus-visible + .open { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .open { background: var(--accent); color: white; border-color: var(--accent); font-weight: 650; }
+  .panel { border: 1px solid var(--line); border-radius: 12px; background: white; min-width: 0; }
+  #empty { padding: 42px 24px; text-align: center; color: var(--muted); }
+  #error { background: #fff5ec; color: #873815; padding: 12px; margin-bottom: 12px; border-radius: 7px; overflow-wrap: anywhere; }
+  #stats { display: flex; gap: 8px 20px; flex-wrap: wrap; color: var(--muted); font-size: .88rem; padding: 0 0 14px; align-items: baseline; }
+  #stats strong { color: var(--ink); }
+  #workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(270px, 320px); gap: 14px; align-items: start; }
+  .toolbar { padding: 12px 14px; align-items: flex-end; justify-content: flex-start; border-bottom: 1px solid var(--line); }
+  .control { display: grid; gap: 5px; font-size: .83rem; font-weight: 650; }
+  .search { position: relative; flex: 1 1 220px; min-width: 0; }
+  #search { min-width: 0; border: 1px solid #afbec5; border-radius: 7px; width: 100%; padding: 8px 10px; font-weight: 400; }
+  #matches { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 2; background: white; border: 1px solid var(--line); border-radius: 8px; padding: 5px; max-height: 245px; overflow: auto; box-shadow: 0 8px 20px #17304723; }
+  .match, .relation { display: block; width: 100%; text-align: left; padding: 7px 9px; margin: 0 0 4px; overflow-wrap: anywhere; }
+  .match { border-color: transparent; }
+  .match small { display: block; color: var(--muted); }
+  .canvas-head { padding: 8px 14px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
+  .zoom { display: flex; align-items: center; gap: 5px; }
+  .zoom button { padding: 3px 9px; }
+  #viewport { overflow: auto; height: clamp(360px, 59vh, 880px); background: #f8faf9 radial-gradient(#cdd8d6 1px, transparent 1px) 0 0 / 19px 19px; }
+  #graph { display: block; margin: auto; }
+  .legend { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; color: var(--muted); font-size: .82rem; }
+  .key { border-top: 2px solid #6d7f8b; width: 22px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+  .key.cross { border-top: 2px dashed var(--cross); }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+  #details { padding: 15px 16px; max-height: min(78vh, 1000px); overflow: auto; overflow-wrap: anywhere; }
+  .muted, .kicker { color: var(--muted); font-size: .85rem; }
+  .kicker { margin-bottom: 5px; }
+  code, svg text { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+  code { font-size: .87em; }
+  .cards { list-style: none; padding: 0; margin: 0; }
+  .cards li { padding: 8px 0; border-top: 1px solid var(--line); }
+  .cards code { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .relation { font-size: .86rem; color: var(--accent); }
+  .node, .edge { cursor: pointer; }
+  .node rect.body { fill: white; stroke: #9cadb6; }
+  .node.active rect.body { stroke: var(--accent); stroke-width: 2.5; fill: #f1fbf8; }
+  .node:hover rect.body, .node:focus rect.body { stroke: var(--accent); stroke-width: 2; }
+  .node text { fill: var(--ink); font-size: 12px; font-weight: 650; }
+  .node .repo-label { fill: var(--muted); font-size: 10px; font-weight: 400; }
+  .edge .ink { fill: none; stroke: #6d7f8b; stroke-width: 1.4; marker-end: url(#arrow); }
+  .edge.cross .ink { stroke: var(--cross); stroke-width: 2; stroke-dasharray: 7 4; marker-end: url(#cross-arrow); }
+  .edge.active .ink, .edge:hover .ink, .edge:focus .ink { stroke-width: 3; }
+  .edge:focus-visible { outline: none; }
+  .edge:focus-visible .ink { filter: drop-shadow(0 0 2px currentColor); }
+  .edge .hit { fill: none; stroke: transparent; stroke-width: 14; }
+  @media (max-width: 820px) {
+    #workspace { grid-template-columns: 1fr; }
+    #details { max-height: none; }
+    #viewport { height: 53vh; }
+  }
+</style>
+<main class="shell">
+  <header>
+    <h1><span>VRA</span>调用图查看器</h1>
+    <div><input id="file" type="file" accept=".json,application/json"><label class="open" for="file">打开 Graph JSON</label></div>
+  </header>
+  <p id="error" role="alert" hidden></p>
+  <p class="panel" id="empty">选择 VRA 导出的 Graph JSON 文件，从函数或调用边开始查看。</p>
+  <div id="loaded" hidden>
+    <div id="stats"></div>
+    <div id="workspace">
+      <section class="panel" aria-label="函数调用图">
+        <div class="toolbar">
+          <div class="control search">
+            <label for="search">查找函数</label>
+            <input id="search" type="search" autocomplete="off" placeholder="按函数名、文件路径或 ID 搜索" aria-controls="matches">
+            <div id="matches" hidden></div>
+          </div>
+          <label class="control">显示范围
+            <select id="scope">
+              <option value="1">直接调用关系</option>
+              <option value="2">前后两跳</option>
+              <option value="all">全图</option>
+              <option value="cross">跨仓库调用</option>
+            </select>
+          </label>
+        </div>
+        <div class="canvas-head">
+          <span id="visible-count" aria-live="polite"></span>
+          <div class="zoom">
+            <button type="button" id="zoom-out" aria-label="缩小">−</button>
+            <button type="button" id="fit">适应窗口</button>
+            <button type="button" id="zoom-in" aria-label="放大">+</button>
+          </div>
+        </div>
+        <div id="viewport" tabindex="0" aria-label="调用图画布，可滚动">
+          <svg id="graph" xmlns="http://www.w3.org/2000/svg" aria-label="箭头由调用者指向被调用者"></svg>
+        </div>
+        <div class="legend" id="legend"></div>
+      </section>
+      <aside class="panel" id="details" aria-label="函数与调用详情"></aside>
+    </div>
+  </div>
+</main>
+<script type="application/json" id="embedded-graph">null</script>
+<script>
+  "use strict";
+
+  const byId = (id) => document.getElementById(id);
+  const svg = byId("graph");
+  const viewport = byId("viewport");
+  const details = byId("details");
+  const scope = byId("scope");
+  const search = byId("search");
+  const matches = byId("matches");
+  const colors = ["#006c64", "#73488b", "#27608c", "#a54820", "#536b24", "#945374"];
+  const labels = { matched: "已匹配", unresolved: "未解析", ambiguous: "有歧义", indirect: "间接调用" };
+  const evidenceLabels = {
+    compiler_reference_in_translation_unit: "Clang 在编译单元内找到了对应定义",
+    build_scope_symbol_candidate_not_linker_verified: "按构建范围匹配候选，尚未核验最终链接",
+    cross_translation_unit_candidate_not_linker_verified: "跨编译单元匹配候选，尚未核验最终链接",
+    workspace_candidates_without_build_scope: "发现候选，需要构建范围才能匹配",
+    same_file_definition: "按同文件定义匹配",
+  };
+  const box = { width: 244, height: 49, stepX: 335, stepY: 73, margin: 70 };
+  let state;
+  let focused;
+  let selectedEdge;
+  let zoom = 1;
+  let bounds;
+
+  function html(tag, value, className) {
+    const element = document.createElement(tag);
+    if (value !== undefined) element.textContent = value;
+    if (className) element.className = className;
+    return element;
+  }
+
+  function vector(tag, attributes, value) {
+    const element = document.createElementNS(svg.namespaceURI, tag);
+    for (const [key, val] of Object.entries(attributes)) element.setAttribute(key, val);
+    if (value !== undefined) element.textContent = value;
+    return element;
+  }
+
+  function groupBy(items, key) {
+    const groups = new Map();
+    for (const item of items) {
+      const id = key(item);
+      if (!groups.has(id)) groups.set(id, []);
+      groups.get(id).push(item);
+    }
+    return groups;
+  }
+
+  function locationText(loc) {
+    return loc ? [loc.file, loc.line, loc.column].join(":") : "位置未知";
+  }
+
+  function indexGraph(graph) {
+    if (graph?.schema_version !== "1.0.0" || graph.directed !== true ||
+        !["nodes", "edges", "call_sites"].every((key) => Array.isArray(graph[key]))) {
+      throw new Error("请选择 VRA Call Graph v1 JSON（需要 nodes、edges、call_sites）。");
+    }
+    const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
+    const sites = new Map(graph.call_sites.map((site) => [site.id, site]));
+    const validLocation = (location) => typeof location?.file === "string" &&
+      Number.isInteger(location.line) && Number.isInteger(location.column);
+    if (nodes.size !== graph.nodes.length || sites.size !== graph.call_sites.length ||
+        new Set(graph.edges.map((edge) => edge.id)).size !== graph.edges.length ||
+        graph.nodes.some((node) => ![node.id, node.name, node.repo].every((value) => typeof value === "string") ||
+          !validLocation(node.location)) ||
+        graph.edges.some((edge) => !nodes.has(edge.source) || !nodes.has(edge.target) ||
+          !Array.isArray(edge.call_site_ids) || edge.call_site_ids.some((id) => !sites.has(id))) ||
+        graph.call_sites.some((site) => !nodes.has(site.caller_id) || !validLocation(site.location))) {
+      throw new Error("图中有重复 ID，或节点、调用点及其引用不符合格式。");
+    }
+    const sortedNodes = [...nodes.values()].sort((a, b) =>
+      a.repo.localeCompare(b.repo) || a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+    const repos = [...new Set(sortedNodes.map((node) => node.repo))];
+    return {
+      graph, nodes, sites, sortedNodes,
+      colors: new Map(repos.map((repo, i) => [repo, colors[i % colors.length]])),
+      incoming: groupBy(graph.edges, (edge) => edge.target),
+      outgoing: groupBy(graph.edges, (edge) => edge.source),
+      sitesByCaller: groupBy(graph.call_sites, (site) => site.caller_id),
+    };
+  }
+
+  function setGraph(graph, fallbackName) {
+    const indexed = indexGraph(graph);
+    state = indexed;
+    focused = state.sortedNodes.find((node) => node.name === "main")?.id ??
+      graph.edges[0]?.source ?? state.sortedNodes[0]?.id;
+    selectedEdge = null;
+    scope.value = "1";
+    search.value = "";
+    matches.hidden = true;
+    byId("error").hidden = true;
+    byId("empty").hidden = true;
+    byId("loaded").hidden = false;
+    byId("stats").replaceChildren(
+      html("strong", graph.metadata?.project_id ?? fallbackName),
+      html("span", graph.nodes.length + " 个函数"),
+      html("span", graph.edges.length + " 条调用边"),
+      html("span", graph.call_sites.length + " 个调用点"),
+      html("span", graph.edges.filter((edge) => edge.is_cross_repo).length + " 条跨仓库边"),
+    );
+    const legend = [["key", "调用方向：调用者 → 被调用者"], ["key cross", "跨仓库调用"]].map(([cls, label]) => {
+      const item = html("span");
+      item.append(html("i", "", cls), document.createTextNode(label));
+      return item;
+    });
+    for (const [repo, color] of state.colors) {
+      const item = html("span");
+      const dot = html("i", "", "swatch");
+      dot.style.background = color;
+      item.append(dot, document.createTextNode(repo));
+      legend.push(item);
+    }
+    byId("legend").replaceChildren(...legend);
+    render();
+  }
+
+  function distances(roots, adjacency, endpoint, depth, excluded) {
+    const rank = new Map(roots.map((id) => [id, 0]));
+    const queue = [...roots];
+    for (let i = 0; i < queue.length; i++) {
+      const id = queue[i];
+      const distance = rank.get(id);
+      if (distance >= depth) continue;
+      for (const edge of adjacency.get(id) ?? []) {
+        const next = edge[endpoint];
+        if (rank.has(next) || excluded?.has(next)) continue;
+        rank.set(next, distance + 1);
+        queue.push(next);
+      }
+    }
+    return rank;
+  }
+
+  function view() {
+    if (scope.value === "all" || scope.value === "cross") {
+      const crossOnly = scope.value === "cross";
+      const edges = crossOnly ? state.graph.edges.filter((edge) => edge.is_cross_repo) : state.graph.edges;
+      const endpoints = new Set(edges.flatMap((edge) => [edge.source, edge.target]));
+      const nodes = crossOnly ? state.sortedNodes.filter((node) => endpoints.has(node.id)) : state.sortedNodes;
+      const outgoing = crossOnly ? groupBy(edges, (edge) => edge.source) : state.outgoing;
+      const targets = new Set(edges.filter((edge) => edge.source !== edge.target).map((edge) => edge.target));
+      const roots = nodes.filter((node) => !targets.has(node.id)).map((node) => node.id);
+      const ranks = distances(roots, outgoing, "target", Infinity);
+      // A component made entirely of cycles can have no zero-indegree node.
+      for (const {id} of nodes) {
+        if (ranks.has(id)) continue;
+        for (const [next, level] of distances([id], outgoing, "target", Infinity, ranks)) {
+          ranks.set(next, level);
+        }
+      }
+      return { ranks, edges };
+    }
+    if (!focused) return { ranks: new Map(), edges: [] };
+    const depth = Number(scope.value);
+    const back = distances([focused], state.incoming, "source", depth);
+    const forward = distances([focused], state.outgoing, "target", depth);
+    const ranks = new Map(forward);
+    for (const [id, distance] of back) {
+      if (!ranks.has(id) || distance <= ranks.get(id)) ranks.set(id, -distance);
+    }
+    return {
+      ranks,
+      edges: state.graph.edges.filter((edge) => ranks.has(edge.source) && ranks.has(edge.target)),
+    };
+  }
+
+  function layout(ranks) {
+    const columns = groupBy(state.sortedNodes.filter((node) => ranks.has(node.id)), (node) => ranks.get(node.id));
+    const levels = [...columns.keys()].sort((a, b) => a - b);
+    let tallest = 1;
+    for (const column of columns.values()) tallest = Math.max(tallest, column.length);
+    const positions = new Map();
+    for (const [columnIndex, level] of levels.entries()) {
+      const column = columns.get(level);
+      for (const [row, node] of column.entries()) {
+        const x = box.margin + columnIndex * box.stepX;
+        const y = box.margin + (row + (tallest - column.length) / 2) * box.stepY;
+        positions.set(node.id, { x, y });
+      }
+    }
+    return {
+      positions,
+      width: box.margin * 2 + box.width + Math.max(0, levels.length - 1) * box.stepX,
+      height: box.margin * 2 + box.height + (tallest - 1) * box.stepY,
+    };
+  }
+
+  function edgePath(source, target) {
+    const fromY = source.y + box.height / 2;
+    const toY = target.y + box.height / 2;
+    if (source === target) {
+      const right = source.x + box.width;
+      return `M ${right} ${fromY} C ${right + 65} ${fromY}, ${right + 50} ${source.y - 54}, ${right - 20} ${source.y}`;
+    }
+    if (source.x === target.x) {
+      const right = source.x + box.width;
+      const bend = right + 38 + Math.min(21, Math.abs(toY - fromY) / 30);
+      return `M ${right} ${fromY} C ${bend} ${fromY}, ${bend} ${toY}, ${right + 1} ${toY}`;
+    }
+    const forward = source.x < target.x;
+    const fromX = forward ? source.x + box.width : source.x;
+    const toX = forward ? target.x - 1 : target.x + box.width + 1;
+    const middle = (fromX + toX) / 2;
+    return `M ${fromX} ${fromY} C ${middle} ${fromY}, ${middle} ${toY}, ${toX} ${toY}`;
+  }
+
+  function bind(element, label, action) {
+    element.setAttribute("tabindex", "0");
+    element.setAttribute("role", "button");
+    element.setAttribute("aria-label", label);
+    element.append(vector("title", {}, label));
+    element.addEventListener("click", action);
+    element.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      action();
+    });
+  }
+
+  function svgDefs() {
+    const defs = vector("defs", {});
+    for (const [id, color] of [["arrow", "#6d7f8b"], ["cross-arrow", "#a54820"]]) {
+      const marker = vector("marker", {id, viewBox: "0 0 10 10", refX: 9, refY: 5,
+        markerWidth: 8, markerHeight: 8, markerUnits: "userSpaceOnUse", orient: "auto"});
+      marker.append(vector("path", {d: "M0 0 L10 5 L0 10 Z", fill: color}));
+      defs.append(marker);
+    }
+    return defs;
+  }
+
+  function selectNode(id) {
+    focused = id;
+    selectedEdge = null;
+    if (scope.value === "cross") {
+      const neighbors = [...(state.incoming.get(id) ?? []), ...(state.outgoing.get(id) ?? [])];
+      if (!neighbors.some((edge) => edge.is_cross_repo)) scope.value = "1";
+    }
+    if (scope.value === "all" || scope.value === "cross") {
+      markSelection();
+      showNode();
+      const position = bounds.positions.get(id);
+      if (position) center(position);
+    } else {
+      render();
+    }
+  }
+
+  function render() {
+    const { ranks, edges } = view();
+    bounds = layout(ranks);
+    const { positions, width, height } = bounds;
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    const fragment = document.createDocumentFragment();
+    fragment.append(svgDefs());
+    if (!positions.size) {
+      const message = state.nodes.size ? "当前图没有跨仓库调用" : "这份图没有函数节点";
+      fragment.append(vector("text", { x: width / 2, y: height / 2, "text-anchor": "middle", fill: "#4e6370" }, message));
+    }
+    for (const edge of edges) {
+      const el = vector("g", {class: edge.is_cross_repo ? "edge cross" : "edge", "data-edge": edge.id});
+      const d = edgePath(positions.get(edge.source), positions.get(edge.target));
+      el.append(vector("path", {d, class: "ink"}), vector("path", {d, class: "hit"}));
+      const source = state.nodes.get(edge.source).name;
+      const target = state.nodes.get(edge.target).name;
+      bind(el, `${source} → ${target}，${edge.call_site_ids.length} 个调用点`, () => {
+        selectedEdge = edge;
+        markSelection();
+        showEdge(edge);
+      });
+      fragment.append(el);
+    }
+    for (const [id, {x, y}] of positions) {
+      const node = state.nodes.get(id);
+      const el = vector("g", {class: "node", transform: `translate(${x},${y})`, "data-node": id});
+      el.append(
+        vector("rect", {class: "body", width: box.width, height: box.height, rx: 8}),
+        vector("rect", {x: 8, y: 9, width: 4, height: 31, rx: 2, fill: state.colors.get(node.repo)}),
+        vector("text", {x: 20, y: 21}, clip(node.name, 30)),
+        vector("text", {class: "repo-label", x: 20, y: 38}, clip(node.repo, 32)),
+      );
+      bind(el, `${node.name} · ${locationText(node.location)}`, () => selectNode(id));
+      fragment.append(el);
+    }
+    svg.replaceChildren(fragment);
+    markSelection();
+    showNode();
+    byId("visible-count").textContent = `显示 ${positions.size} 个函数 · ${edges.length} 条边`;
+    if (scope.value === "all") {
+      setZoom(.85, bounds.positions.get(focused));
+    } else {
+      fit();
+    }
+  }
+
+  function clip(text, max) {
+    const characters = Array.from(text);
+    return characters.length <= max ? text : characters.slice(0, max - 1).join("") + "…";
+  }
+
+  function markSelection() {
+    const activeEdges = new Set();
+    for (const edge of state.incoming.get(focused) ?? []) activeEdges.add(edge.id);
+    for (const edge of state.outgoing.get(focused) ?? []) activeEdges.add(edge.id);
+    for (const item of svg.querySelectorAll("[data-node], [data-edge]")) {
+      const { node, edge } = item.dataset;
+      const active = selectedEdge
+        ? edge === selectedEdge.id || node === selectedEdge.source || node === selectedEdge.target
+        : (node !== undefined && node === focused) || activeEdges.has(edge);
+      item.classList.toggle("active", active);
+    }
+  }
+
+  function center(position) {
+    viewport.scrollLeft = position.x * zoom + box.width * zoom / 2 - viewport.clientWidth / 2;
+    viewport.scrollTop = position.y * zoom + box.height * zoom / 2 - viewport.clientHeight / 2;
+  }
+
+  function setZoom(value, position) {
+    if (!bounds) return;
+    const previousX = (viewport.scrollLeft + viewport.clientWidth / 2) / zoom;
+    const previousY = (viewport.scrollTop + viewport.clientHeight / 2) / zoom;
+    zoom = Math.max(.04, Math.min(3, value));
+    svg.style.width = bounds.width * zoom + "px";
+    svg.style.height = bounds.height * zoom + "px";
+    if (position) {
+      center(position);
+    } else {
+      viewport.scrollLeft = previousX * zoom - viewport.clientWidth / 2;
+      viewport.scrollTop = previousY * zoom - viewport.clientHeight / 2;
+    }
+  }
+
+  function fit() {
+    if (!bounds) return;
+    setZoom(Math.min(1, (viewport.clientWidth - 12) / bounds.width,
+      (viewport.clientHeight - 12) / bounds.height));
+    viewport.scrollTo(0, 0);
+  }
+
+  function detailHeader(label, name, subtitle) {
+    details.replaceChildren(html("p", label, "kicker"), html("h2", name), html("p", subtitle, "muted"));
+  }
+
+  function detailSection(title, content) {
+    details.append(html("h3", title), content);
+  }
+
+  function showNode() {
+    const node = state.nodes.get(focused);
+    if (!node) {
+      detailHeader("函数", "暂无可查看的函数", "");
+      return;
+    }
+    detailHeader("函数", node.name, `${node.repo} · ${locationText(node.location)}`);
+    detailSection("函数 ID", html("code", node.id));
+    if (node.translation_unit && node.translation_unit !== node.location.file) {
+      detailSection("编译单元", html("code", node.translation_unit));
+    }
+    const incoming = state.incoming.get(node.id) ?? [];
+    const outgoing = state.outgoing.get(node.id) ?? [];
+    detailSection(`谁调用它（${incoming.length}）`, relationList(incoming, "source"));
+    detailSection(`它调用谁（${outgoing.length}）`, relationList(outgoing, "target"));
+    const uncertain = (state.sitesByCaller.get(node.id) ?? []).filter((site) => site.resolution !== "matched");
+    if (uncertain.length) detailSection(`未形成边的调用点（${uncertain.length}）`, siteList(uncertain));
+  }
+
+  function relationList(edges, endpoint) {
+    if (!edges.length) return html("p", "图中没有对应的已匹配调用。", "muted");
+    const list = html("div");
+    for (const edge of edges) {
+      const node = state.nodes.get(edge[endpoint]);
+      const label = `${node.name} · ${node.repo} · ${edge.call_site_ids.length} 个调用点`;
+      const button = html("button", label, "relation");
+      button.type = "button";
+      button.addEventListener("click", () => selectNode(node.id));
+      list.append(button);
+    }
+    return list;
+  }
+
+  function siteList(sites) {
+    const list = html("ul", undefined, "cards");
+    for (const site of sites) {
+      const item = html("li");
+      const evidence = site.evidence ?? site.reason;
+      const explanation = html("p", evidenceLabels[evidence] ?? evidence, "muted");
+      explanation.title = evidence;
+      item.append(
+        html("p", `${locationText(site.location)} · ${labels[site.resolution] ?? site.resolution}`, "muted"),
+        html("code", site.expression),
+        explanation,
+      );
+      list.append(item);
+    }
+    return list;
+  }
+
+  function showEdge(edge) {
+    const source = state.nodes.get(edge.source);
+    const target = state.nodes.get(edge.target);
+    detailHeader("调用边", `${source.name} → ${target.name}`, `${source.repo} → ${target.repo}`);
+    const links = html("div");
+    for (const [label, node] of [["调用者", source], ["被调用者", target]]) {
+      const button = html("button", `${label} · ${node.name}`, "relation");
+      button.type = "button";
+      button.addEventListener("click", () => selectNode(node.id));
+      links.append(button);
+    }
+    detailSection("边的两个端点", links);
+    detailSection(`调用点（${edge.call_site_ids.length}）`, siteList(edge.call_site_ids.map((id) => state.sites.get(id))));
+  }
+
+  function chooseMatch(node) {
+    search.value = "";
+    matches.hidden = true;
+    selectNode(node.id);
+  }
+
+  function updateMatches() {
+    const query = search.value.trim().toLowerCase();
+    if (!query) {
+      matches.hidden = true;
+      return [];
+    }
+    const found = [];
+    for (const node of state.sortedNodes) {
+      if ([node.name, node.repo, node.location.file, node.id].some((value) => value.toLowerCase().includes(query))) {
+        found.push(node);
+      }
+      if (found.length >= 20) break;
+    }
+    matches.replaceChildren();
+    if (!found.length) matches.append(html("p", "没有匹配的函数。", "muted"));
+    for (const node of found) {
+      const button = html("button", node.name, "match");
+      button.type = "button";
+      button.append(html("small", `${node.repo} · ${locationText(node.location)}`));
+      button.addEventListener("click", () => chooseMatch(node));
+      matches.append(button);
+    }
+    matches.hidden = false;
+    return found;
+  }
+
+  function showError(error) {
+    const message = byId("error");
+    message.textContent = "无法打开调用图。 " + error.message;
+    message.hidden = false;
+  }
+
+  byId("file").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      setGraph(JSON.parse(await file.text()), file.name);
+    } catch (error) {
+      showError(error);
+    } finally {
+      event.target.value = "";
+    }
+  });
+  search.addEventListener("input", updateMatches);
+  search.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") matches.hidden = true;
+    if (event.key === "Enter" && !matches.hidden) {
+      const [first] = updateMatches();
+      if (first) chooseMatch(first);
+    }
+  });
+  document.addEventListener("click", (event) => {
+    if (!search.parentElement.contains(event.target)) matches.hidden = true;
+  });
+  scope.addEventListener("change", () => {
+    selectedEdge = null;
+    render();
+  });
+  byId("zoom-out").addEventListener("click", () => setZoom(zoom / 1.25));
+  byId("zoom-in").addEventListener("click", () => setZoom(zoom * 1.25));
+  byId("fit").addEventListener("click", fit);
+  try {
+    const embedded = JSON.parse(byId("embedded-graph").textContent);
+    if (embedded) setGraph(embedded, "已载入的调用图");
+  } catch (error) {
+    showError(error);
+  }
+</script>
+</html>

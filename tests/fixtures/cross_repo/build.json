@@ -1,0 +1,38 @@
+{
+  "configuration": "chain",
+  "root": "app",
+  "targets": {
+    "app": {
+      "kind": "executable",
+      "sources": [
+        "app/main.c"
+      ],
+      "dependencies": [
+        "lib_a"
+      ]
+    },
+    "lib_a": {
+      "kind": "static_library",
+      "sources": [
+        "lib_a/api.c"
+      ],
+      "dependencies": [
+        "lib_b"
+      ]
+    },
+    "lib_b": {
+      "kind": "static_library",
+      "sources": [
+        "lib_b/api.c"
+      ],
+      "dependencies": []
+    },
+    "lib_other": {
+      "kind": "static_library",
+      "sources": [
+        "lib_other/api.c"
+      ],
+      "dependencies": []
+    }
+  }
+}

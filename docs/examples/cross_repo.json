@@ -1,0 +1,279 @@
+{
+  "schema_version": "1.0.0",
+  "directed": true,
+  "metadata": {
+    "project_id": "cross_repo",
+    "revision": null,
+    "frontend": "clang",
+    "languages": [
+      "c"
+    ],
+    "build_configuration_id": "0fb8f035d23f27e3209e",
+    "build_root_target": "app",
+    "matching_policy": "matched_edges_only",
+    "linker_verified": false,
+    "attributes": {
+      "summary": {
+        "node_count": 4,
+        "edge_count": 3,
+        "call_site_count": 3,
+        "resolution_counts": {
+          "matched": 3
+        }
+      },
+      "build_context": {
+        "configuration_id": "0fb8f035d23f27e3209e",
+        "configuration_label": "chain",
+        "root": "app",
+        "selected_targets": [
+          "app",
+          "lib_a",
+          "lib_b"
+        ],
+        "sources": [
+          "app/main.c",
+          "lib_a/api.c",
+          "lib_b/api.c"
+        ],
+        "source_owners": {
+          "app/main.c": "app",
+          "lib_a/api.c": "lib_a",
+          "lib_b/api.c": "lib_b"
+        },
+        "matching_scope": "selected_root_dependency_closure",
+        "linker_verified": false
+      },
+      "limitations": [
+        "function_pointer_targets_not_resolved",
+        "runtime_path_feasibility_not_checked",
+        "linker_results_not_verified"
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "id": "app/main.c::app_entry@2:1#build=0fb8f035d23f27e3209e",
+      "kind": "function",
+      "name": "app_entry",
+      "language": "c",
+      "repo": "app",
+      "location": {
+        "file": "app/main.c",
+        "line": 2,
+        "column": 1
+      },
+      "translation_unit": "app/main.c",
+      "is_static": false,
+      "build_target": "app",
+      "build_configuration_id": "0fb8f035d23f27e3209e",
+      "attributes": {
+        "return_type": "void",
+        "parameters": [],
+        "function_type": "void (void)",
+        "linkage_name": "_app_entry"
+      }
+    },
+    {
+      "id": "app/main.c::main@3:1#build=0fb8f035d23f27e3209e",
+      "kind": "function",
+      "name": "main",
+      "language": "c",
+      "repo": "app",
+      "location": {
+        "file": "app/main.c",
+        "line": 3,
+        "column": 1
+      },
+      "translation_unit": "app/main.c",
+      "is_static": false,
+      "build_target": "app",
+      "build_configuration_id": "0fb8f035d23f27e3209e",
+      "attributes": {
+        "return_type": "int",
+        "parameters": [],
+        "function_type": "int (void)",
+        "linkage_name": "_main"
+      }
+    },
+    {
+      "id": "lib_a/api.c::api_a@2:1#build=0fb8f035d23f27e3209e",
+      "kind": "function",
+      "name": "api_a",
+      "language": "c",
+      "repo": "lib_a",
+      "location": {
+        "file": "lib_a/api.c",
+        "line": 2,
+        "column": 1
+      },
+      "translation_unit": "lib_a/api.c",
+      "is_static": false,
+      "build_target": "lib_a",
+      "build_configuration_id": "0fb8f035d23f27e3209e",
+      "attributes": {
+        "return_type": "void",
+        "parameters": [],
+        "function_type": "void (void)",
+        "linkage_name": "_api_a"
+      }
+    },
+    {
+      "id": "lib_b/api.c::api_b@1:1#build=0fb8f035d23f27e3209e",
+      "kind": "function",
+      "name": "api_b",
+      "language": "c",
+      "repo": "lib_b",
+      "location": {
+        "file": "lib_b/api.c",
+        "line": 1,
+        "column": 1
+      },
+      "translation_unit": "lib_b/api.c",
+      "is_static": false,
+      "build_target": "lib_b",
+      "build_configuration_id": "0fb8f035d23f27e3209e",
+      "attributes": {
+        "return_type": "void",
+        "parameters": [],
+        "function_type": "void (void)",
+        "linkage_name": "_api_b"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_2c9619adce45ef75d2b1ef68d0e20819220b7f50c356764b1692b4fed79bbf18",
+      "kind": "calls",
+      "source": "app/main.c::app_entry@2:1#build=0fb8f035d23f27e3209e",
+      "target": "lib_a/api.c::api_a@2:1#build=0fb8f035d23f27e3209e",
+      "call_site_ids": [
+        "app/main.c::app_entry@2:1::call@41#0#build=0fb8f035d23f27e3209e"
+      ],
+      "is_cross_repo": true
+    },
+    {
+      "id": "e_4b81a36895b07b40727277ab2a9dc45c85cc7c6d6a580b1462ae20dba1ce95dd",
+      "kind": "calls",
+      "source": "app/main.c::main@3:1#build=0fb8f035d23f27e3209e",
+      "target": "app/main.c::app_entry@2:1#build=0fb8f035d23f27e3209e",
+      "call_site_ids": [
+        "app/main.c::main@3:1::call@69#0#build=0fb8f035d23f27e3209e"
+      ],
+      "is_cross_repo": false
+    },
+    {
+      "id": "e_392797cdf6f7d2bd536db54700fb3e9136229e26bd417ebd28cfd10260887ecc",
+      "kind": "calls",
+      "source": "lib_a/api.c::api_a@2:1#build=0fb8f035d23f27e3209e",
+      "target": "lib_b/api.c::api_b@1:1#build=0fb8f035d23f27e3209e",
+      "call_site_ids": [
+        "lib_a/api.c::api_a@2:1::call@37#0#build=0fb8f035d23f27e3209e"
+      ],
+      "is_cross_repo": true
+    }
+  ],
+  "call_sites": [
+    {
+      "id": "app/main.c::app_entry@2:1::call@41#0#build=0fb8f035d23f27e3209e",
+      "caller_id": "app/main.c::app_entry@2:1#build=0fb8f035d23f27e3209e",
+      "callee_id": "lib_a/api.c::api_a@2:1#build=0fb8f035d23f27e3209e",
+      "callee_name": "api_a",
+      "expression": "api_a()",
+      "location": {
+        "file": "app/main.c",
+        "line": 2,
+        "column": 24
+      },
+      "resolution": "matched",
+      "candidate_ids": [
+        "lib_a/api.c::api_a@2:1#build=0fb8f035d23f27e3209e"
+      ],
+      "reason": "build_scope_external_symbol_candidate",
+      "evidence": "build_scope_symbol_candidate_not_linker_verified",
+      "linker_verified": false,
+      "attributes": {
+        "syntax_kind": "ImplicitCastExpr",
+        "location_kind": "source_range",
+        "macro_expansion": false,
+        "spelling_location": null,
+        "caller_target": "app",
+        "callee_target": "lib_a",
+        "build_root_target": "app",
+        "match_scope": "selected_root_dependency_closure",
+        "binding": null,
+        "start_byte": 41,
+        "end_byte": 48,
+        "end_line_number": 2,
+        "end_column": 31
+      }
+    },
+    {
+      "id": "app/main.c::main@3:1::call@69#0#build=0fb8f035d23f27e3209e",
+      "caller_id": "app/main.c::main@3:1#build=0fb8f035d23f27e3209e",
+      "callee_id": "app/main.c::app_entry@2:1#build=0fb8f035d23f27e3209e",
+      "callee_name": "app_entry",
+      "expression": "app_entry()",
+      "location": {
+        "file": "app/main.c",
+        "line": 3,
+        "column": 18
+      },
+      "resolution": "matched",
+      "candidate_ids": [
+        "app/main.c::app_entry@2:1#build=0fb8f035d23f27e3209e"
+      ],
+      "reason": "clang_decl_reference",
+      "evidence": "compiler_reference_in_translation_unit",
+      "linker_verified": false,
+      "attributes": {
+        "syntax_kind": "ImplicitCastExpr",
+        "location_kind": "source_range",
+        "macro_expansion": false,
+        "spelling_location": null,
+        "caller_target": "app",
+        "callee_target": "app",
+        "build_root_target": "app",
+        "binding": null,
+        "start_byte": 69,
+        "end_byte": 80,
+        "end_line_number": 3,
+        "end_column": 29
+      }
+    },
+    {
+      "id": "lib_a/api.c::api_a@2:1::call@37#0#build=0fb8f035d23f27e3209e",
+      "caller_id": "lib_a/api.c::api_a@2:1#build=0fb8f035d23f27e3209e",
+      "callee_id": "lib_b/api.c::api_b@1:1#build=0fb8f035d23f27e3209e",
+      "callee_name": "api_b",
+      "expression": "api_b()",
+      "location": {
+        "file": "lib_a/api.c",
+        "line": 2,
+        "column": 20
+      },
+      "resolution": "matched",
+      "candidate_ids": [
+        "lib_b/api.c::api_b@1:1#build=0fb8f035d23f27e3209e"
+      ],
+      "reason": "build_scope_external_symbol_candidate",
+      "evidence": "build_scope_symbol_candidate_not_linker_verified",
+      "linker_verified": false,
+      "attributes": {
+        "syntax_kind": "ImplicitCastExpr",
+        "location_kind": "source_range",
+        "macro_expansion": false,
+        "spelling_location": null,
+        "caller_target": "lib_a",
+        "callee_target": "lib_b",
+        "build_root_target": "app",
+        "match_scope": "selected_root_dependency_closure",
+        "binding": null,
+        "start_byte": 37,
+        "end_byte": 44,
+        "end_line_number": 2,
+        "end_column": 27
+      }
+    }
+  ],
+  "diagnostics": []
+}
